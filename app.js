@@ -1,64 +1,73 @@
 (function(){
     'use strict'
     //x="samo";
-    angular.module('soln2',[])
-    .controller('ToBuyCtrl', ToBuyCtrl)
-    .service('shopinglistservice',shopinglistservice);
+    angular.module('NarrowItDownApp',[])
+    .controller('NarrowItDownController', NarrowItDownController)
+    .service('MenuSearchService',MenuSearchService)
+    .directive('foundItems',FoundItems);
     //.config(config);
-    ToBuyCtrl.$inject=['shopinglistservice'];
-    boughtCtrl.$inject=['shopinglistservice'];
-       
-    function boughtCtrl(shopinglistservice){
-
+;
+    NarrowItDownController.$inject=['MenuSearchService'];   
+    function NarrowItDownController(MenuSearchService){
+        var ctl=this;
+        ctl.searchTerm="";
+        ctl.found =[];
+        ctl.getMatchedMenuItems=function(){
+           ctl.found =[];
+           var response=MenuSearchService.getMatchedMenuItems(ctl.searchTerm);
+           response.then(function(d){
+               ctl.found=[];
+               var array=Object.entries(d.data)
+                  array.forEach(element => {
+                    element[1].menu_items.forEach(item=>{
+                        //check if search term in description
+                        if(item.description.includes(ctl.searchTerm)){
+                           ctl.found.push(item);
+                        }
+                    });
+                    });
+                 if(array.length==0 || ctl.searchTerm.trim().length ==0 ){
+                    ctl.notfound=true;
+                    return
+                    }else
+                         ctl.notfound=false;
+                }); 
+          
+        }
+      
+       ctl.remove=function(index){
+        ctl.found.splice(index,1);
+       } 
+        
     }
-    function ToBuyCtrl(shopinglistservice){
-        var tobuyctrl=this;
-          tobuyctrl.getProductsToBuy=function (){
-          return shopinglistservice.getProductsToBuy();
-        }
-        tobuyctrl.getboughtlist=function(){
-            return shopinglistservice.getboughtlist();
-        }
+    MenuSearchService.$inject=['$http'];
+    function MenuSearchService($http){
+        var service=this;
+        var found=[];
+        service.getMatchedMenuItems=function(searchTerm){
+            console.log(searchTerm);
+          var response=  $http({
+                url:'https://coursera-jhu-default-rtdb.firebaseio.com/menu_items.json',
 
-       tobuyctrl.buy=function(index){
-        console.log(index);
-        shopinglistservice.buy(index);
-       }
-        tobuyctrl.return=function(index){
-        console.log(index);
-        shopinglistservice.return(index);
-       }
+            })
 
+            return response;
         }
-        function shopinglistservice(){
-            var service=this;
-                var products=[{ name: "red cookies", quantity: 10 },{ name: "diet soda", quantity: 4 },{ name: "white milk", quantity: 20 },{ name: "chees", quantity: 5 },{ name: "beans", quantity: 15 },{ name: "coke", quantity: 10 }]
-                var bought=[]
-            service.getProductsToBuy=function(){
-                return products;
-            }
-            service.getboughtlist=function(){
-                return bought;
-            }
-            service.buy=function(index){
-                console.log(products[index]);
-                bought.push(products[index]);
-                console.log(bought);
-                products.splice(index,1);
-            }
+        //
+    }
 
-            service.return=function(index){
-                products.push(bought[index]);
-                bought.splice(index,1);
-            }
+function FoundItems(){
+    var ddo={
 
-        }
-        function ServiceProvider(){
-            var provider=this;
-            provider.config={'prop':1};
-            provider.$get=function(){
-                var service = new Service(provider.config.prop);
-                return service;
-            }
-        }
+    templateUrl:'list.html',
+     scope: {
+      list: '=myList',
+      removeItem:'=onRemove'
+      
+    }
+    };
+    return ddo
+} 
+
+
 })();
